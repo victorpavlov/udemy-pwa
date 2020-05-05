@@ -1,6 +1,7 @@
 var functions = require('firebase-functions');
 var admin = require('firebase-admin');
 var cors = require('cors')({origin: true});
+var webPush = require('web-push');
 
 // // Create and Deploy Your First Cloud Functions
 // // https://firebase.google.com/docs/functions/write-firebase-functions
@@ -21,7 +22,31 @@ exports.newPostsData = functions.https.onRequest(function(request, response) {
       image: request.body.image
     })
       .then(function() {
-        response.status(201).json({message: 'Data Stored', id: request.body.id})
+        webPush.setVapidDetails(
+          'mailto:vitekpavlov@gmail.com',
+          'BFW7ARGlycmtGvNkrrTknHk94pdfZ6cQiK8aQDOVRFhyG7HqPupLOkHMBxlZZ2Cdt5cqDiQGsLl3D9N3k2NoY3s',
+          'vmpcmtXYe8lT1-GgodFVqk8byynmL3YdpA1WhLUl4PI'
+        );
+        return admin.database().ref('subscriptions').once('value');
+      })
+      .then(function(subscriptions) {
+        subscriptions.forEach(function(sub) {
+          var pushConfig = {
+            endpoint: sub.val().endpoint,
+            keys: {
+              auth: sub.val().keys.auth,
+              p256dh: sub.val().keys.p256dh
+            }
+          };
+          webPush.sendNotification(pushConfig, JSON.stringify({
+            title: 'New Post',
+            content: 'New Post Added!',
+            openUrl: '/help'
+          }));
+        });
+        response
+          .status(201)
+          .json({ message: 'Data Stored', id: request.body.id });
       })
       .catch(function(err) {
         response.status(500).json({message: err})

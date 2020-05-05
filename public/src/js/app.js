@@ -43,9 +43,52 @@ function displayConfirmNotification() {
     };
     navigator.serviceWorker.ready
       .then(function(swreg) {
-        swreg.showNotification('Successfully subscribed from SW!', options);
+        swreg.showNotification('Successfully subscribed!', options);
       });
   }
+}
+
+function configurePushSub() {
+  if (!('serviceWorker' in navigator)) {
+    return;
+  }
+  var reg;
+  navigator.serviceWorker.ready
+    .then(function(swreg) {
+      reg = swreg;
+      return swreg.pushManager.getSubscription();
+    })
+    .then(function(sub) {
+      if (sub === null) {
+        var vapidPublicKey =
+          'BFW7ARGlycmtGvNkrrTknHk94pdfZ6cQiK8aQDOVRFhyG7HqPupLOkHMBxlZZ2Cdt5cqDiQGsLl3D9N3k2NoY3s';
+        var vapidPublicKeyConverted = urlBase64ToUint8Array(vapidPublicKey);
+        return reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: vapidPublicKeyConverted
+        });
+      } else {
+
+      }
+    })
+    .then(function(newSub) {
+      return fetch('https://pwa-app-1da65.firebaseio.com/subscriptions.json', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(newSub)
+      })
+    })
+    .then(function(res) {
+      if (res.ok) {
+        displayConfirmNotification();
+      }
+    })
+    .catch(function(err) {
+      console.log(err);
+    });
 }
 
 function askForNotificationPermission() {
@@ -54,7 +97,8 @@ function askForNotificationPermission() {
     if (result !== 'granted') {
       console.log('No permission granted');
     } else {
-      displayConfirmNotification();
+      configurePushSub();
+      //displayConfirmNotification();
     }
   });
 }
