@@ -10,6 +10,7 @@ var canvasElement = document.querySelector('#canvas');
 var captureButton = document.querySelector('#capture-btn');
 var imagePicker = document.querySelector('#image-picker');
 var imagePickerArea = document.querySelector('#pick-image');
+var picture;
 
 function initializeMedia() {
   if (!('mediaDevices' in navigator)) {
@@ -40,6 +41,26 @@ function initializeMedia() {
       imagePickerArea.style.display = 'block';
     });
 }
+
+captureButton.addEventListener('click', function(event) {
+  canvasElement.style.display = 'block';
+  videoPlayer.style.display = 'none';
+  this.style.display = 'none';
+
+  var context = canvasElement.getContext('2d');
+  context.drawImage(
+    videoPlayer,
+    0,
+    0,
+    canvas.width,
+    videoPlayer.videoHeight / (videoPlayer.videoWidth / canvas.width)
+  );
+  videoPlayer.srcObject.getVideoTracks().forEach(track => {
+    track.stop();
+  });
+
+  picture = dataURItoBlob(canvasElement.toDataURL());
+})
 
 function openCreatePostModal() {
   // createPostArea.style.display = 'block';
@@ -164,23 +185,19 @@ if ('indexedDB' in window) {
 }
 
 function sendData() {
-  fetch('https://us-central1-pwa-app-1da65.cloudfunctions.net/newPostsData', {
+  var postData = new FormData(),
+    genericId = new Date().toISOString();
+  postData.append('id', genericId);
+  postData.append('title', titleInput.value());
+  postData.append('location', locationInput.value());
+  postData.append('file', picture, genericId + '.png');
+  fetch('https://us-central1-pwa-app-1da65.cloudfunctions.net/storePostData', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    },
-    body: JSON.stringify({
-      id: new Date().toISOString(),
-      title: titleInput.value,
-      location: locationInput.value,
-      image: 'https://firebasestorage.googleapis.com/v0/b/pwa-app-1da65.appspot.com/o/sf-boat.jpg?alt=media&token=a0df0511-ec36-4e59-ade9-2526fee27346'
-    })
-  })
-    .then(function(res) {
-      console.log('Sent data', res);
-      updateUI();
-    })
+    body: postData,
+  }).then(function (res) {
+    console.log('Sent data', res);
+    updateUI();
+  });
 }
 
 form.addEventListener('submit', function(event) {
@@ -199,7 +216,8 @@ form.addEventListener('submit', function(event) {
         var post = {
           id: new Date().toISOString(),
           title: titleInput.value,
-          location: locationInput.value
+          location: locationInput.value,
+          picture: picture
         };
         writeData('sync-posts', post)
           .then(function() {

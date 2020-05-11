@@ -1,8 +1,8 @@
 importScripts('/src/js/idb.js');
 importScripts('/src/js/utility.js');
 
-var CACHE_STATIC_NAME = 'static-v26';
-var CACHE_DYNAMIC_NAME = 'dynamic-v2';
+var CACHE_STATIC_NAME = 'static-v27';
+var CACHE_DYNAMIC_NAME = 'dynamic-v3';
 var STATIC_FILES = [
   '/',
   '/index.html',
@@ -74,7 +74,7 @@ function isInArray(string, array) {
 
 self.addEventListener('fetch', function (event) {
 
-  var url = 'https://pwagram-99adf.firebaseio.com/posts';
+  var url = 'https://pwa-app-1da65.firebaseio.com/posts';
   if (event.request.url.indexOf(url) > -1) {
     event.respondWith(fetch(event.request)
       .then(function (res) {
@@ -189,31 +189,29 @@ self.addEventListener('sync', function(event) {
       readAllData('sync-posts')
         .then(function(data) {
           for (var dt of data) {
-            fetch('https://us-central1-pwa-app-1da65.cloudfunctions.net/newPostsData', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-              },
-              body: JSON.stringify({
-                id: dt.id,
-                title: dt.title,
-                location: dt.location,
-                image: 'https://firebasestorage.googleapis.com/v0/b/pwa-app-1da65.appspot.com/o/sf-boat.jpg?alt=media&token=a0df0511-ec36-4e59-ade9-2526fee27346'
-              })
-            })
-              .then(function(res) {
+            var postData = new FormData();
+            postData.append('id', dt.id);
+            postData.append('title', dt.title);
+            postData.append('location', dt.location);
+            postData.append('file', dt.picture, dt.id + '.png');
+            fetch(
+              'https://us-central1-pwa-app-1da65.cloudfunctions.net/storePostData',
+              {
+                method: 'POST',
+                body: postData,
+              }
+            )
+              .then(function (res) {
                 console.log('Sent data', res);
                 if (res.ok) {
-                  res.json()
-                    .then(function(resData) {
-                      console.log(resData);
-                      
-                      deleteItemFromData('sync-posts', resData.id);
-                    });
+                  res.json().then(function (resData) {
+                    console.log(resData);
+
+                    deleteItemFromData('sync-posts', resData.id);
+                  });
                 }
               })
-              .catch(function(err) {
+              .catch(function (err) {
                 console.log('Error while sending data', err);
               });
           }
