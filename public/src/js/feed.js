@@ -11,6 +11,51 @@ var captureButton = document.querySelector('#capture-btn');
 var imagePicker = document.querySelector('#image-picker');
 var imagePickerArea = document.querySelector('#pick-image');
 var picture;
+var locationButton = document.querySelector('#location-btn');
+var locationLoader = document.querySelector('#location-loader');
+var fetchedLocation = {
+  lat: 0,
+  lng: 0
+};
+
+locationButton.addEventListener('click', function(event) {
+  if (!('geolocation' in navigator)) {
+    return;
+  }
+  var sawAlert = false;
+
+  locationButton.style.display = 'none';
+  locationLoader.style.display = 'block';
+
+  navigator.geolocation.getCurrentPosition(function(position) {
+    locationButton.style.display = 'inline';
+    locationLoader.style.display = 'none';
+    fetchedLocation = {
+      lat: position.coords.latitude,
+      lng: 0
+    };
+    locationInput.value = 'In Melitopol';
+    document.querySelector('#manual-location').classList.add('is-focused');
+  }, function(err) {
+    locationButton.style.display = 'inline';
+    locationLoader.style.display = 'none';
+    if (!sawAlert) {
+      alert("Couldn't fetch location, please add manually!");
+      sawAlert = true;
+    }
+    fetchedLocation = {
+      lat: 0,
+      lng: 0
+    };
+  },
+  { timeout: 7000 });
+});
+
+function initializeLocation() {
+  if (!('geolocation' in navigator)) {
+    locationButton.style.display = 'none';
+  }
+}
 
 function initializeMedia() {
   if (!('mediaDevices' in navigator)) {
@@ -60,13 +105,20 @@ captureButton.addEventListener('click', function(event) {
   });
 
   picture = dataURItoBlob(canvasElement.toDataURL());
-})
+});
+
+imagePicker.addEventListener('change', function(event) {
+  picture = event.target.files[0];
+});
 
 function openCreatePostModal() {
   // createPostArea.style.display = 'block';
   // setTimeout(function() {
-  createPostArea.style.transform = 'translateY(0)';
+  setTimeout(() => {
+    createPostArea.style.transform = 'translateY(0)';
+  }, 1);
   initializeMedia();
+  initializeLocation();
   // }, 1);
   // if (deferredPrompt) {
   //   deferredPrompt.prompt();
@@ -95,10 +147,20 @@ function openCreatePostModal() {
 }
 
 function closeCreatePostModal() {
-  createPostArea.style.transform = 'translateY(100vh)';
   imagePickerArea.style.display = 'none';
   videoPlayer.style.display = 'none';
   canvasElement.style.display = 'none';
+  locationButton.style.display = 'inline';
+  locationLoader.style.display = 'block';
+  captureButton.style.display = 'inline';
+  if (videoPlayer.srcObject) {
+    videoPlayer.srcObject.getVideoTracks().forEach((track) => {
+      track.stop();
+    });
+  }
+  setTimeout(() => {
+    createPostArea.style.transform = 'translateY(100vh)';
+  }, 1);
   // createPostArea.style.display = 'none';
 }
 
@@ -146,7 +208,7 @@ function createCard(data) {
   // cardSaveButton.addEventListener('click', onSaveButtonClicked);
   // cardSupportingText.appendChild(cardSaveButton);
   cardWrapper.appendChild(cardSupportingText);
-  componentHandler.upgradeElement(cardWrapper);
+  // componentHandler.upgradeElement(cardWrapper);
   sharedMomentsArea.appendChild(cardWrapper);
 }
 
@@ -190,6 +252,8 @@ function sendData() {
   postData.append('id', genericId);
   postData.append('title', titleInput.value());
   postData.append('location', locationInput.value());
+  postData.append('rawLocationLat', fetchedLocation.lat);
+  postData.append('rawLocationLng', fetchedLocation.lng);
   postData.append('file', picture, genericId + '.png');
   fetch('https://us-central1-pwa-app-1da65.cloudfunctions.net/storePostData', {
     method: 'POST',
@@ -217,7 +281,8 @@ form.addEventListener('submit', function(event) {
           id: new Date().toISOString(),
           title: titleInput.value,
           location: locationInput.value,
-          picture: picture
+          rawLocation: fetchedLocation,
+          picture: picture,
         };
         writeData('sync-posts', post)
           .then(function() {

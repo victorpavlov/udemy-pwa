@@ -74,11 +74,12 @@
   margin: auto;
 }
 
-#create-post #pick-image {
+#pick-image,
+#location-loader {
   display: none;
 }
 
-#create-post #capture-btn {
+#capture-btn {
   margin: 10px auto;
 }
 

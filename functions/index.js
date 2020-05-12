@@ -1,34 +1,33 @@
-var functions = require('firebase-functions');
-var admin = require('firebase-admin');
-var cors = require('cors')({origin: true});
-var webPush = require('web-push');
-
-var fs = require('fs');
-var UUID = require('uuid-v4');
-var os = require('os');
-var Busboy = require('busboy');
+var functions = require("firebase-functions");
+var admin = require("firebase-admin");
+var cors = require("cors")({ origin: true });
+var webpush = require("web-push");
+var fs = require("fs");
+var UUID = require("uuid-v4");
+var os = require("os");
+var Busboy = require("busboy");
 var path = require('path');
 
 // // Create and Deploy Your First Cloud Functions
 // // https://firebase.google.com/docs/functions/write-firebase-functions
 //
 
-var serviceAccount = require('./pwa-app-6f249a9a6bd2.json');
+var serviceAccount = require("./pwa-app-6f249a9a6bd2.json");
 
 var gcconfig = {
-  projectId: 'pwa-app-1da65',
-  keyFilename: 'pwa-app-6f249a9a6bd2.json',
+  projectId: "pwa-app-1da65",
+  keyFilename: "pwa-app-6f249a9a6bd2.json"
 };
 
-var gcs = require('@google-cloud/storage')(gcconfig);
+var gcs = require("@google-cloud/storage")(gcconfig);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: 'https://pwa-app-1da65.firebaseio.com/',
-})
+  databaseURL: "https://pwa-app-1da65.firebaseio.com/"
+});
 
-exports.storePostData = functions.https.onRequest(function (request, response) {
-  cors(request, response, function () {
+exports.storePostData = functions.https.onRequest(function(request, response) {
+  cors(request, response, function() {
     var uuid = UUID();
 
     const busboy = new Busboy({ headers: request.headers });
@@ -74,6 +73,10 @@ exports.storePostData = functions.https.onRequest(function (request, response) {
                 id: fields.id,
                 title: fields.title,
                 location: fields.location,
+                rawLocation: {
+                  lat: fields.rawLocationLat,
+                  lng: fields.rawLocationLng
+                },
                 image:
                   "https://firebasestorage.googleapis.com/v0/b/" +
                   bucket.name +
@@ -135,7 +138,7 @@ exports.storePostData = functions.https.onRequest(function (request, response) {
     busboy.end(request.rawBody);
     // formData.parse(request, function(err, fields, files) {
     //   fs.rename(files.file.path, "/tmp/" + files.file.name);
-    //   var bucket = gcs.bucket("YOUR_PROJECT_ID.appspot.com");
+    //   var bucket = gcs.bucket("pwa-app-1da65.appspot.com");
     // });
   });
 });
