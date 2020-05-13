@@ -100,7 +100,7 @@ captureButton.addEventListener('click', function(event) {
     canvas.width,
     videoPlayer.videoHeight / (videoPlayer.videoWidth / canvas.width)
   );
-  videoPlayer.srcObject.getVideoTracks().forEach(track => {
+  videoPlayer.srcObject.getVideoTracks().forEach(function(track) {
     track.stop();
   });
 
@@ -114,7 +114,7 @@ imagePicker.addEventListener('change', function(event) {
 function openCreatePostModal() {
   // createPostArea.style.display = 'block';
   // setTimeout(function() {
-  setTimeout(() => {
+  setTimeout(function() {
     createPostArea.style.transform = 'translateY(0)';
   }, 1);
   initializeMedia();
@@ -154,11 +154,11 @@ function closeCreatePostModal() {
   locationLoader.style.display = 'block';
   captureButton.style.display = 'inline';
   if (videoPlayer.srcObject) {
-    videoPlayer.srcObject.getVideoTracks().forEach((track) => {
+    videoPlayer.srcObject.getVideoTracks().forEach(function(track) {
       track.stop();
     });
   }
-  setTimeout(() => {
+  setTimeout(function() {
     createPostArea.style.transform = 'translateY(100vh)';
   }, 1);
   // createPostArea.style.display = 'none';
